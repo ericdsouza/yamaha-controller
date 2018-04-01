@@ -1,0 +1,606 @@
+{
+    "interactionModel": {
+        "languageModel": {
+            "invocationName": "the stereo",
+            "intents": [
+                {
+                    "name": "AMAZON.CancelIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.HelpIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.StopIntent",
+                    "samples": []
+                },
+                {
+                    "name": "RelativeVolumeIntent",
+                    "slots": [
+                        {
+                            "name": "VolumeDirection",
+                            "type": "VolumeDirection",
+                            "samples": [
+                                "{VolumeDirection}"
+                            ]
+                        },
+                        {
+                            "name": "VolumeQuantity",
+                            "type": "VolumeQuantity"
+                        },
+                        {
+                            "name": "StereoSynonym",
+                            "type": "StereoSynonyms"
+                        },
+                        {
+                            "name": "RelativeVolumeAction",
+                            "type": "RelativeVolumeAction"
+                        },
+                        {
+                            "name": "By",
+                            "type": "BySynonym"
+                        }
+                    ],
+                    "samples": [
+                        "{RelativeVolumeAction} the {StereoSynonym} {VolumeDirection} {By} {VolumeQuantity}",
+                        "{RelativeVolumeAction} {VolumeDirection} the {StereoSynonym} {By} {VolumeQuantity}"
+                    ]
+                },
+                {
+                    "name": "AbsoluteVolumeIntent",
+                    "slots": [
+                        {
+                            "name": "AMAZON.NUMBER",
+                            "type": "AMAZON.NUMBER",
+                            "samples": [
+                                "{AMAZON.NUMBER}"
+                            ]
+                        },
+                        {
+                            "name": "StereoSynonym",
+                            "type": "StereoSynonyms"
+                        },
+                        {
+                            "name": "AbsoluteVolumeAction",
+                            "type": "AbsoluteVolumeAction"
+                        }
+                    ],
+                    "samples": [
+                        "{AbsoluteVolumeAction} the {StereoSynonym} to {AMAZON.NUMBER}"
+                    ]
+                },
+                {
+                    "name": "SpeakersIntent",
+                    "slots": [
+                        {
+                            "name": "SpeakersSynonym",
+                            "type": "SpeakersSynonyms"
+                        },
+                        {
+                            "name": "OnOff",
+                            "type": "OnOff"
+                        }
+                    ],
+                    "samples": [
+                        "Turn {OnOff} the outside {SpeakersSynonym}",
+                        "Turn {SpeakersSynonym} {OnOff} outside"
+                    ]
+                },
+                {
+                    "name": "InputSourceIntent",
+                    "slots": [
+                        {
+                            "name": "InputSource",
+                            "type": "InputSource",
+                            "samples": [
+                                "{InputSource}"
+                            ]
+                        },
+                        {
+                            "name": "InputSourceAction",
+                            "type": "InputSourceAction"
+                        }
+                    ],
+                    "samples": [
+                        "{InputSourceAction} the input source to {InputSource}"
+                    ]
+                },
+                {
+                    "name": "PowerIntent",
+                    "slots": [
+                        {
+                            "name": "OnOff",
+                            "type": "OnOff",
+                            "samples": [
+                                "{OnOff}"
+                            ]
+                        },
+                        {
+                            "name": "StereoSynonym",
+                            "type": "StereoSynonyms"
+                        }
+                    ],
+                    "samples": [
+                        "Turn {OnOff}",
+                        "Turn the {StereoSynonym} {OnOff}",
+                        "Turn {OnOff} the {StereoSynonym}"
+                    ]
+                }
+            ],
+            "types": [
+                {
+                    "name": "VolumeDirection",
+                    "values": [
+                        {
+                            "id": "down",
+                            "name": {
+                                "value": "down",
+                                "synonyms": [
+                                    "lower",
+                                    "softer",
+                                    "reduce"
+                                ]
+                            }
+                        },
+                        {
+                            "id": "up",
+                            "name": {
+                                "value": "up",
+                                "synonyms": [
+                                    "raise",
+                                    "louder",
+                                    "increase"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "VolumeQuantity",
+                    "values": [
+                        {
+                            "id": "10",
+                            "name": {
+                                "value": "10"
+                            }
+                        },
+                        {
+                            "id": "9",
+                            "name": {
+                                "value": "9"
+                            }
+                        },
+                        {
+                            "id": "8",
+                            "name": {
+                                "value": "8",
+                                "synonyms": [
+                                    "a lot"
+                                ]
+                            }
+                        },
+                        {
+                            "id": "7",
+                            "name": {
+                                "value": "7"
+                            }
+                        },
+                        {
+                            "id": "6",
+                            "name": {
+                                "value": "6"
+                            }
+                        },
+                        {
+                            "id": "5",
+                            "name": {
+                                "value": "5"
+                            }
+                        },
+                        {
+                            "id": "4",
+                            "name": {
+                                "value": "4",
+                                "synonyms": [
+                                    "a little bit",
+                                    "a little"
+                                ]
+                            }
+                        },
+                        {
+                            "id": "3",
+                            "name": {
+                                "value": "3"
+                            }
+                        },
+                        {
+                            "id": "2",
+                            "name": {
+                                "value": "2"
+                            }
+                        },
+                        {
+                            "id": "1",
+                            "name": {
+                                "value": "1",
+                                "synonyms": [
+                                    "a smidge"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "StereoSynonyms",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "power"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "volume"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "music"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "stereo"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "RelativeVolumeAction",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "adjust"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "change"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "turn"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "BySynonym",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "By"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "AbsoluteVolumeAction",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "change"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "set"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "make"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "SpeakersSynonyms",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "the speakers"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "the radio"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "the music"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "the stereo"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "speakers"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "OnOff",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "Off"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "On"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "InputSource",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "TUNER",
+                                "synonyms": [
+                                    "radio",
+                                    "the radio",
+                                    "f.m.",
+                                    "a.m."
+                                ]
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "HDMI2",
+                                "synonyms": [
+                                    "macmini",
+                                    "normal",
+                                    "computer"
+                                ]
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "HDMI1",
+                                "synonyms": [
+                                    "chromecast",
+                                    "netflix"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "InputSourceAction",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "Set"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "Turn"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "Change"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "dialog": {
+            "intents": [
+                {
+                    "name": "RelativeVolumeIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "VolumeDirection",
+                            "type": "VolumeDirection",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.729442174382.549451501288"
+                            }
+                        },
+                        {
+                            "name": "VolumeQuantity",
+                            "type": "VolumeQuantity",
+                            "confirmationRequired": false,
+                            "elicitationRequired": false,
+                            "prompts": {}
+                        },
+                        {
+                            "name": "StereoSynonym",
+                            "type": "StereoSynonyms",
+                            "confirmationRequired": false,
+                            "elicitationRequired": false,
+                            "prompts": {}
+                        },
+                        {
+                            "name": "RelativeVolumeAction",
+                            "type": "RelativeVolumeAction",
+                            "confirmationRequired": false,
+                            "elicitationRequired": false,
+                            "prompts": {}
+                        },
+                        {
+                            "name": "By",
+                            "type": "BySynonym",
+                            "confirmationRequired": false,
+                            "elicitationRequired": false,
+                            "prompts": {}
+                        }
+                    ]
+                },
+                {
+                    "name": "SpeakersIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "SpeakersSynonym",
+                            "type": "SpeakersSynonyms",
+                            "confirmationRequired": false,
+                            "elicitationRequired": false,
+                            "prompts": {}
+                        },
+                        {
+                            "name": "OnOff",
+                            "type": "OnOff",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.163823881105.607118599384"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "InputSourceIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "InputSource",
+                            "type": "InputSource",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.118193315547.633798996895"
+                            }
+                        },
+                        {
+                            "name": "InputSourceAction",
+                            "type": "InputSourceAction",
+                            "confirmationRequired": false,
+                            "elicitationRequired": false,
+                            "prompts": {}
+                        }
+                    ]
+                },
+                {
+                    "name": "PowerIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "OnOff",
+                            "type": "OnOff",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.354715769857.974759472134"
+                            }
+                        },
+                        {
+                            "name": "StereoSynonym",
+                            "type": "StereoSynonyms",
+                            "confirmationRequired": false,
+                            "elicitationRequired": false,
+                            "prompts": {}
+                        }
+                    ]
+                },
+                {
+                    "name": "AbsoluteVolumeIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "AMAZON.NUMBER",
+                            "type": "AMAZON.NUMBER",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.1049114972785.479999816373"
+                            }
+                        },
+                        {
+                            "name": "StereoSynonym",
+                            "type": "StereoSynonyms",
+                            "confirmationRequired": false,
+                            "elicitationRequired": false,
+                            "prompts": {}
+                        },
+                        {
+                            "name": "AbsoluteVolumeAction",
+                            "type": "AbsoluteVolumeAction",
+                            "confirmationRequired": false,
+                            "elicitationRequired": false,
+                            "prompts": {}
+                        }
+                    ]
+                }
+            ]
+        },
+        "prompts": [
+            {
+                "id": "Elicit.Slot.729442174382.549451501288",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Do you want me to turn the volume louder or softer?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.163823881105.607118599384",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Do you want me to turn the speakers on or off?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.354715769857.974759472134",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Do you want me to turn the stereo on or off?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.1049114972785.479999816373",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Please provide a volume between fifty and twenty"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.118193315547.633798996895",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Please specify an input source, either MacMini or ChromeCast"
+                    }
+                ]
+            }
+        ]
+    }
+}
