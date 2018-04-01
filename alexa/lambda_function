@@ -14,7 +14,7 @@ NOT_FOUND = "Not Found"
 SITE_NOT_AVAILABLE = "Site not Available"
 TRY_AGAIN = "Try Again"
 OK = "OK"
-YAMAHA_URL_BASE = "http://198.84.203.215/yamaha/"
+YAMAHA_URL_BASE = "http://1.2.3.4/yamaha/"
 
 
 # --------------- Helper functions ---------------------------------------------
