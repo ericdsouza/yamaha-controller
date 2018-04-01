@@ -1,0 +1,619 @@
+"""
+Yamaha Controller skill for Alexa
+(c) 2018 Laumoda Inc
+"""
+
+from __future__ import print_function
+import urllib.request
+import json
+from socket import timeout
+import base64
+
+PERMISSION_DENIED = "Permission Denied"
+NOT_FOUND = "Not Found"
+SITE_NOT_AVAILABLE = "Site not Available"
+TRY_AGAIN = "Try Again"
+OK = "OK"
+YAMAHA_URL_BASE = "http://198.84.203.215/yamaha/"
+
+
+# --------------- Helper functions ---------------------------------------------
+
+def html_to_text(data):
+    """ custom html to text parser
+    """
+
+    # unescape 
+    data = data.replace("&lt;", "<")
+    data = data.replace("&gt;", ">")
+    data = data.replace("&amp;", "&")
+    data = data.replace("&#x27;", "'")
+
+    # remove the newlines
+    data = data.replace("\n", " ")
+    data = data.replace("&nbsp;", " ")
+
+    # replace consecutive spaces into a single one
+    data = " ".join(data.split())   
+
+    # remove all the tags
+    p = re.compile(r'<[^<]*?>')
+    data = p.sub('', data)
+
+    return data
+
+def ssml_to_text(data):
+    """ custom ssml to text parser
+    """
+
+    # remove all the tags
+    p = re.compile(r'<[^<]*?>')
+    data = p.sub('', data)
+
+    return data
+
+# --------------- Helpers that build all of the responses ----------------------
+
+def build_plaintext_response(title, output_text, reprompt_text, should_end_session):
+    return {
+        'outputSpeech': {
+            'type': 'PlainText',
+            'text': output_text
+        },
+        'card': {
+            'type': 'Simple',
+            'title': title,
+            'content': output_text
+        },
+        'reprompt': {
+            'outputSpeech': {
+                'type': 'PlainText',
+                'text': reprompt_text
+            }
+        },
+        'shouldEndSession': should_end_session
+    }
+
+
+def build_SSML_response(title, output_ssml, reprompt_ssml, should_end_session):
+    return {
+        'outputSpeech': {
+            'type': 'SSML',
+            'ssml': output_ssml
+        },
+        'card': {
+            'type': 'Simple',
+            'title': title,
+            'content': ssml_to_text(output_ssml)
+        },
+        'reprompt': {
+            'outputSpeech': {
+                'type': 'SSML',
+                'ssml': reprompt_ssml
+            }
+        },
+        'shouldEndSession': should_end_session
+    }
+
+
+def build_response(session_attributes, speechlet_response):
+    return {
+        'version': '1.0',
+        'sessionAttributes': session_attributes,
+        'response': speechlet_response
+    }
+
+
+
+# --------------- Style guide --------------------------------------------------
+
+# module_name, package_name, ClassName, method_name, ExceptionName
+# function_name, GLOBAL_CONSTANT_NAME, global_var_name, instance_var_name
+# function_parameter_name, local_var_name
+
+
+# --------------- Custom functions ---------------------------------------------
+
+def build_request_header():
+    credentials = ('%s:%s' % ('user', 'password'))
+    encoded_credentials = base64.b64encode(credentials.encode('ascii'))
+    return { 'User-Agent' : "Python-urllib/3.6", 
+            'Connection' : 'keep-alive',
+            'Accept' : "application/json, text/plain, */*",
+            'Accept-Language' : "en-US,en;q=0.9",
+            'Authorization' : 'Basic %s' % encoded_credentials.decode("ascii")
+    }
+
+def build_options_response(direction, half_decibels):
+    return {
+        'direction': direction,
+        'half_decibels': half_decibels
+    }
+
+def get_volume_options(intent):
+
+    direction = NOT_FOUND
+    half_decibels = 4
+    if 'slots' in intent:
+        if 'VolumeDirection' in intent['slots']:
+            if 'resolutions' in intent['slots']['VolumeDirection']:
+                direction = intent['slots']['VolumeDirection']['resolutions']['resolutionsPerAuthority'][0]['values'][0]['value']['name'].strip()
+            elif 'value' in intent['slots']['VolumeDirection']:
+                direction = intent['slots']['VolumeDirection']['value'].strip()
+        if 'VolumeQuantity' in intent['slots']:
+            if 'resolutions' in intent['slots']['VolumeQuantity']:
+                half_decibels = intent['slots']['VolumeQuantity']['resolutions']['resolutionsPerAuthority'][0]['values'][0]['value']['name'].strip()
+            elif 'value' in intent['slots']['VolumeQuantity']:
+                half_decibels = intent['slots']['VolumeQuantity']['value'].strip()
+
+    if direction == "":
+        direction = NOT_FOUND
+    if half_decibels == "":
+        half_decibels = 4
+    print("relative direction {} half_decibels {}".format(direction, half_decibels))
+    
+    return build_options_response(direction, half_decibels)
+
+def build_volume_response(status, volume):
+    return {
+        'status': status,
+        'volume': volume
+    }
+        
+def change_relative_volume(direction, half_decibels):
+
+    # connect with the Yamaha receiver
+    url = YAMAHA_URL_BASE + \
+             "volume/relative/{}/{}/".format(direction, half_decibels)
+    hdr = build_request_header()
+
+    req = urllib.request.Request(url, headers=hdr)
+    
+    try:
+        response=urllib.request.urlopen(req)
+        r = response.read()
+        data = json.loads(r)
+        volume = data['volume']
+    except Exception as e:
+        print("error occurred connecting to stereo {}".format(str(e)))
+        return build_volume_response(SITE_NOT_AVAILABLE, None)
+        # return build_volume_response(OK, "25")
+
+    if data['status'] != "OK":
+        print("error returned from web service {}".format(data['status']))
+        return build_volume_response(TRY_AGAIN, None)
+
+    print("volume returned {}".format(volume))
+    volume = volume.replace("-", "")
+
+    return build_volume_response(OK, volume)
+
+def get_absolute_volume_options(intent):
+
+    decibels = NOT_FOUND
+    if 'slots' in intent:
+        if 'AMAZON.NUMBER' in intent['slots']:
+            if 'value' in intent['slots']['AMAZON.NUMBER']:
+                decibels = intent['slots']['AMAZON.NUMBER']['value']
+
+    if decibels == "":
+        decibels = NOT_FOUND
+    elif decibels == "?":
+        decibels = NOT_FOUND
+    print("absolute decibels {}".format(decibels))
+    
+    return decibels
+
+def change_absolute_volume(decibels):
+    # connect with the Yamaha receiver
+    url = YAMAHA_URL_BASE + \
+             "volume/absolute/{}/".format(decibels)
+    hdr = build_request_header()
+
+    req = urllib.request.Request(url, headers=hdr)
+    
+    try:
+        response=urllib.request.urlopen(req)
+        r = response.read()
+        data = json.loads(r)
+    except Exception as e:
+        print("error occurred connecting to stereo {}".format(str(e)))
+        print("response headers {}".format(response.headers))
+        print("response {}".format(r))
+        return build_volume_response(SITE_NOT_AVAILABLE, None)
+        # return build_volume_response(OK, "25")
+
+    if data['status'] != "OK":
+        print("error returned from web service {}".format(data))
+        return build_volume_response(TRY_AGAIN, None)
+
+    volume = data['volume']
+    print("volume returned {}".format(volume))
+    volume = volume.replace("-", "")
+
+    return build_volume_response(OK, volume)
+
+def get_input_source_options(intent):
+
+    input_source = NOT_FOUND
+    if 'slots' in intent:
+        if 'InputSource' in intent['slots']:
+            if 'resolutions' in intent['slots']['InputSource']:
+                input_source = intent['slots']['InputSource']['resolutions']['resolutionsPerAuthority'][0]['values'][0]['value']['name'].strip()
+            elif 'value' in intent['slots']['InputSource']:
+                input_source = intent['slots']['InputSource']['value'].strip()
+
+    if input_source == "":
+        input_source = NOT_FOUND
+    elif input_source == "?":
+        input_source = NOT_FOUND
+    print("input_source {}".format(input_source))
+    
+    return input_source
+
+def build_rxvc_response(status, rxvcresponse):
+    return {
+        'status': status,
+        'rxvcresponse': rxvcresponse
+    }
+        
+def set_input_source(input_source):
+    # connect with the Yamaha receiver
+    url = YAMAHA_URL_BASE + \
+             "inputsource/{}/".format(input_source)
+    hdr = build_request_header()
+
+    req = urllib.request.Request(url, headers=hdr)
+    
+    try:
+        response=urllib.request.urlopen(req)
+        r = response.read()
+        data = json.loads(r)
+    except Exception as e:
+        print("error occurred connecting to stereo {}".format(str(e)))
+        print("response headers {}".format(response.headers))
+        print("response {}".format(r))
+        return build_rxvc_response(SITE_NOT_AVAILABLE, None)
+
+    if data['status'] != "OK":
+        print("error returned from web service {}".format(data))
+        return build_rxvc_response(TRY_AGAIN, None)
+
+    print ("data returned {}".format(data))
+    rxvcresponse = data['rxvcresponse']
+
+    return build_rxvc_response(OK, rxvcresponse)
+
+def get_power_options(intent):
+
+    on_off = NOT_FOUND
+    if 'slots' in intent:
+        if 'OnOff' in intent['slots']:
+            if 'resolutions' in intent['slots']['OnOff']:
+                on_off = intent['slots']['OnOff']['resolutions']['resolutionsPerAuthority'][0]['values'][0]['value']['name'].strip()
+            elif 'value' in intent['slots']['OnOff']:
+                on_off = intent['slots']['OnOff']['value'].strip()
+
+    if on_off == "":
+        on_off = NOT_FOUND
+    elif on_off == "?":
+        on_off = NOT_FOUND
+    print("on_off {}".format(on_off))
+    
+    return on_off
+
+def set_power(on_off):
+    # connect with the Yamaha receiver
+    url = YAMAHA_URL_BASE + \
+             "power/{}/".format(on_off)
+    hdr = build_request_header()
+
+    req = urllib.request.Request(url, headers=hdr)
+    
+    try:
+        response=urllib.request.urlopen(req)
+        r = response.read()
+        data = json.loads(r)
+    except Exception as e:
+        print("error occurred connecting to stereo {}".format(str(e)))
+        print("response headers {}".format(response.headers))
+        print("response {}".format(r))
+        return build_rxvc_response(SITE_NOT_AVAILABLE, None)
+
+    if data['status'] != "OK":
+        print("error returned from web service {}".format(data))
+        return build_rxvc_response(TRY_AGAIN, None)
+
+    print ("data returned {}".format(data))
+    rxvcresponse = data['rxvcresponse']
+
+    return build_rxvc_response(OK, rxvcresponse)
+
+
+# --------------- Functions that control the skill's behavior ------------------
+
+def get_welcome_response():
+    """ If we wanted to initialize the session to have some attributes we could
+    add those here
+    """
+
+    session_attributes = {}
+    card_title = "Welcome"
+    should_end_session = False
+    
+    output_ssml = "<speak>" \
+                  "<p>Welcome to the Yamaha Controller! </p>" \
+                  "<p>You can change the volume by saying </p>" \
+                  "<p>'Turn the volume up' </p>"\
+                  "</speak>"
+                  
+    reprompt_ssml = "<speak>" \
+                    "<p>I'm sorry, I didn't understand.  " \
+                    "Why don't you try asking, </p>" \
+                    "<p>'Pump up the volume!'</p>" \
+                    "</speak>"
+
+    return build_response(session_attributes, build_SSML_response(
+        card_title, output_ssml, reprompt_ssml, should_end_session))
+
+
+def handle_session_end_request():
+    card_title = "Session Ended"
+    output_text = "Your story has become tiresome. " \
+                  "Now is the time on Sprockets when we dance"
+    # Setting this to true ends the session and exits the skill.
+    should_end_session = True
+    return build_response({}, build_plaintext_response(
+        card_title, output_text, None, should_end_session))
+
+
+def relative_volume_response(intent):
+    """ Changes the volume a relative amount from the current volume.
+    """
+    session_attributes = {}
+    card_title = "Yamaha Controller - Volume change"
+    should_end_session = True
+
+    # Get the volume options from the request intent
+    response = get_volume_options(intent)
+    if response['direction'] == NOT_FOUND:
+        output_text = "I'm sorry, I didn't understand if you want the volume " \
+                      "turned up or down.  Can you please repeat your request?"
+        should_end_session = False
+        return build_response(session_attributes, build_plaintext_response(
+        card_title, output_text, None, should_end_session))
+    
+    direction = response['direction']
+    half_decibels = response['half_decibels']
+
+    # Pump up the volume!
+    response = change_relative_volume(direction, half_decibels)
+    if response['status'] == SITE_NOT_AVAILABLE:
+        output_text = "I'm sorry, I am having trouble connecting with the " \
+                      "Yamaha receiver. Please try again later" 
+        return build_response(session_attributes, build_plaintext_response(
+        card_title, output_text, None, should_end_session))
+    elif response['status'] == TRY_AGAIN:
+        output_text = "I'm sorry, I am having trouble with the Yamaha " \
+                      "receiver. Please try again later" 
+        return build_response(session_attributes, build_plaintext_response(
+        card_title, output_text, None, should_end_session))
+
+    output_text = "The volume is set to " + \
+                    response['volume'] 
+    
+    return build_response(session_attributes, build_plaintext_response(
+        card_title, output_text, None, should_end_session))
+
+def absolute_volume_response(intent):
+    """ Changes the volume to an absolute volume regardless of current state.
+    """
+    session_attributes = {}
+    card_title = "Yamaha Controller - Volume change"
+    should_end_session = True
+
+    # Get the volume from the request intent
+    decibels = get_absolute_volume_options(intent)
+    if decibels == NOT_FOUND:
+        output_text = "I'm sorry, I didn't understand. The volume must be " \
+                      "an integer between 20 and 50.  Can you please " \
+                      "repeat the request?"
+        should_end_session = False
+        return build_response(session_attributes, build_plaintext_response(
+        card_title, output_text, None, should_end_session))
+    
+    if (int(decibels) < 20) or (int(decibels) > 50):
+        output_text = "The volume must be between 20 and 50"
+        should_end_session = True
+        return build_response(session_attributes, build_plaintext_response(
+        card_title, output_text, None, should_end_session))
+    
+    # Pump up the volume!
+    response = change_absolute_volume(decibels)
+    if response['status'] == SITE_NOT_AVAILABLE:
+        output_text = "I'm sorry, I am having trouble connecting with the " \
+                      "Yamaha receiver. Please try again later" 
+        return build_response(session_attributes, build_plaintext_response(
+        card_title, output_text, None, should_end_session))
+    elif response['status'] == TRY_AGAIN:
+        output_text = "I'm sorry, I am having trouble with the Yamaha " \
+                      "receiver. Please try again later" 
+        return build_response(session_attributes, build_plaintext_response(
+        card_title, output_text, None, should_end_session))
+
+    output_text = "The volume is set to " + \
+                    response['volume'] 
+    
+    return build_response(session_attributes, build_plaintext_response(
+        card_title, output_text, None, should_end_session))
+
+
+def speakers_response(intent):
+    """ Turns the outside speakers on/off.
+    """
+    session_attributes = {}
+    card_title = "Yamaha Controller - Outside Speakers"
+    should_end_session = True
+
+    output_text = "I'm sorry this function is not yet available"
+
+    return build_response(session_attributes, build_plaintext_response(
+        card_title, output_text, None, should_end_session))
+
+
+def input_source_response(intent):
+    """ Changes the input source
+    """
+    session_attributes = {}
+    card_title = "Yamaha Controller - Input Source change"
+    should_end_session = True
+
+    # Get the input source from the request intent
+    input_source = get_input_source_options(intent)
+    if input_source == NOT_FOUND:
+        output_text = "I'm sorry, I didn't understand. The input source " \
+                      "should be MacMini or ChromeCast.  Can you please " \
+                      "repeat the request?"
+        should_end_session = False
+        return build_response(session_attributes, build_plaintext_response(
+        card_title, output_text, None, should_end_session))
+    
+    # Straight to the source!
+    response = set_input_source(input_source)
+    if response['status'] == SITE_NOT_AVAILABLE:
+        output_text = "I'm sorry, I am having trouble connecting with the " \
+                      "Yamaha receiver. Please try again later" 
+        return build_response(session_attributes, build_plaintext_response(
+        card_title, output_text, None, should_end_session))
+    elif response['status'] == TRY_AGAIN:
+        output_text = "I'm sorry, I am having trouble with the Yamaha " \
+                      "receiver. Please try again later" 
+        return build_response(session_attributes, build_plaintext_response(
+        card_title, output_text, None, should_end_session))
+
+    output_text = response['rxvcresponse'] 
+    
+    return build_response(session_attributes, build_plaintext_response(
+        card_title, output_text, None, should_end_session))
+
+def power_response(intent):
+    """ Turns the power on/off
+    """
+    session_attributes = {}
+    card_title = "Yamaha Controller - Power On/Off"
+    should_end_session = True
+
+    # Get on/off from the request intent
+    on_off = get_power_options(intent)
+    if on_off == NOT_FOUND:
+        output_text = "I'm sorry, I didn't understand. You can turn the " \
+                      "stereo on, or off.  Can you please " \
+                      "repeat the request?"
+        should_end_session = False
+        return build_response(session_attributes, build_plaintext_response(
+        card_title, output_text, None, should_end_session))
+    
+    # set power on/off
+    response = set_power(on_off)
+    if response['status'] == SITE_NOT_AVAILABLE:
+        output_text = "I'm sorry, I am having trouble connecting with the " \
+                      "Yamaha receiver. Please try again later" 
+        return build_response(session_attributes, build_plaintext_response(
+        card_title, output_text, None, should_end_session))
+    elif response['status'] == TRY_AGAIN:
+        output_text = "I'm sorry, I am having trouble with the Yamaha " \
+                      "receiver. Please try again later" 
+        return build_response(session_attributes, build_plaintext_response(
+        card_title, output_text, None, should_end_session))
+
+    output_text = response['rxvcresponse'] 
+    
+    return build_response(session_attributes, build_plaintext_response(
+        card_title, output_text, None, should_end_session))
+
+
+
+# --------------- Events ------------------
+
+def on_session_started(session_started_request, session):
+    """ Called when the session starts """
+
+    print("on_session_started requestId=" + session_started_request['requestId']
+          + ", sessionId=" + session['sessionId'])
+
+
+def on_launch(launch_request, session):
+    """ Called when the user launches the skill without specifying what they
+    want
+    """
+
+    print("on_launch requestId=" + launch_request['requestId'] +
+          ", sessionId=" + session['sessionId'])
+    # Dispatch to your skill's launch
+    return get_welcome_response()
+
+
+def on_intent(intent_request, session, context):
+    """ Called when the user specifies an intent for this skill """
+
+    print("on_intent requestId=" + intent_request['requestId'] +
+          ", sessionId=" + session['sessionId'])
+
+    intent = intent_request['intent']
+    intent_name = intent_request['intent']['name']
+
+    # Dispatch to your skill's intent handlers
+    if intent_name == "RelativeVolumeIntent":
+        return relative_volume_response(intent)
+    elif intent_name == "AbsoluteVolumeIntent":
+        return absolute_volume_response(intent)
+    elif intent_name == "SpeakersIntent":
+        return speakers_response(intent)
+    elif intent_name == "InputSourceIntent":
+        return input_source_response(intent)
+    elif intent_name == "PowerIntent":
+        return power_response(intent)
+    elif intent_name == "AMAZON.HelpIntent":
+        return get_welcome_response()
+    elif intent_name == "AMAZON.CancelIntent" or intent_name == "AMAZON.StopIntent":
+        return handle_session_end_request()
+    else:
+        raise ValueError("Invalid intent")
+
+
+def on_session_ended(session_ended_request, session):
+    """ Called when the user ends the session.
+
+    Is not called when the skill returns should_end_session=true
+    """
+    print("on_session_ended requestId=" + session_ended_request['requestId'] +
+          ", sessionId=" + session['sessionId'])
+    # add cleanup logic here
+
+
+# --------------- Main handler ------------------
+
+def lambda_handler(event, context):
+    """ Route the incoming request based on type (LaunchRequest, IntentRequest,
+    etc.) The JSON body of the request is provided in the event parameter.
+    """
+    print("event.session.application.applicationId=" +
+          event['session']['application']['applicationId'])
+
+    # Prevent unwanted access to this Lambda function
+    event_app_id = event['session']['application']['applicationId']
+    my_app_id = "amzn1.ask.skill.432e8837-ac6e-4c96-ad64-b890c43c1547"
+    if event_app_id != my_app_id:
+        raise ValueError("Invalid Application ID: {}".format(event_app_id))
+
+
+    if event['session']['new']:
+        on_session_started({'requestId': event['request']['requestId']},
+                           event['session'])
+
+    if event['request']['type'] == "LaunchRequest":
+        return on_launch(event['request'], event['session'])
+    elif event['request']['type'] == "IntentRequest":
+        return on_intent(event['request'], event['session'], event['context'])
+    elif event['request']['type'] == "SessionEndedRequest":
+        return on_session_ended(event['request'], event['session'])
