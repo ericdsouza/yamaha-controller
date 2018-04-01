@@ -1,0 +1,8 @@
+Options +FollowSymlinks
+RewriteEngine on
+
+RewriteRule ^volume/relative/(.*)/(.*)/$ RestController.php?intent=relative&direction=$1&halfdecibels=$2 [nc]
+RewriteRule ^volume/absolute/(.*)/$ RestController.php?intent=absolute&decibels=$1 [nc]
+RewriteRule ^outputb/(.*)/$ RestController.php?intent=outputb&onoff=$1 [nc]
+RewriteRule ^inputsource/(.*)/$ RestController.php?intent=inputsource&inputsource=$1 [nc]
+RewriteRule ^power/(.*)/$ RestController.php?intent=onoff&onoff=$1 [nc]
